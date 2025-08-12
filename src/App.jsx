@@ -23,11 +23,12 @@ export default function App() {
         const scannedData = typeof res === "string" ? res : res?.data;
         setResult(scannedData || "");
         stopScanner();
+        handleVerify(scannedData); // Call API immediately after scan
       },
       {
         highlightScanRegion: true,
         highlightCodeOutline: true,
-        preferredCamera: "environment", // better for mobile scanning
+        preferredCamera: "environment",
       }
     );
 
@@ -61,25 +62,21 @@ export default function App() {
     };
   }, []);
 
-  // Handle Ticket Verification
-  const handleVerify = async () => {
-    if (!result) return;
+  // Handle Ticket Verification (API call)
+  const handleVerify = async (scanData) => {
+    if (!scanData) return;
     try {
       let payload;
       try {
-        // Try to parse JSON from QR
-        payload = JSON.parse(result);
+        payload = JSON.parse(scanData);
       } catch {
-        // If not JSON, assume plain ticket code
-        payload = { ticket_id: result };
+        payload = { ticket_id: scanData };
       }
-
       const res = await fetch("http://192.168.68.112:8000/api/ticket-verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
       const data = await res.json();
       setMessage(data?.message || "No message from server");
     } catch (e) {
@@ -146,25 +143,6 @@ export default function App() {
         <b>Scanned Result:</b>
         <p>{result || "No result yet."}</p>
       </div>
-
-      {/* Verify Button */}
-      <button
-        onClick={handleVerify}
-        disabled={!result}
-        style={{
-          marginTop: 15,
-          width: "100%",
-          padding: 12,
-          fontSize: 16,
-          backgroundColor: result ? "#5cb85c" : "#999",
-          color: "white",
-          border: "none",
-          borderRadius: 6,
-          cursor: result ? "pointer" : "not-allowed",
-        }}
-      >
-        Verify Now
-      </button>
 
       {/* Verification Message */}
       {message && (
